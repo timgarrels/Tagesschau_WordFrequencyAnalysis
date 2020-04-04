@@ -19,3 +19,7 @@ Witzig: Tageschauseiten debuggen um Untertitel zu finden, externe Firma beauftra
 3. Transcripte zu Datenbank parsen (am besten direkt mit maha & Kai Biermanns Tool nutzbar, Mail an die? Tool der Zeit, evtl. von Zeit bezahlt, Copyright...)
 4. ???
 5. Profit
+
+
+Ideas:  
+- Data Science on Raw HTML of archive-sites/tagesschau-sites: Since when thumbnails, when did url schema change, when which show format?
