@@ -9,6 +9,7 @@ import sys
 
 CRAWL_URL = "https://www.tagesschau.de/multimedia/video/videoarchiv2~_date-{yyyymmdd}.html"
 FIRST_ARCHIVE_ENTRY = date(2007, 4, 1)
+TS_URLS_FILENAME = "tagesschau_urls.csv"
 TS_URLS_CSV_SCHEMA = ["date", "urls"]
 # Which dates should be crawled, if None defaults to all dates till today
 START_DATE = None  # Provide date in form 'date(yyyy, mm, dd)'
@@ -50,7 +51,7 @@ def tagesschau_urls_for_date(d):
   """Parses tagesschau show urls available for date"""
   return archive_url_to_tagesschau_urls(archive_url_for_date(d))
 
-def missing_dates_for_tagesschau_urls(file="tagesschau_urls.csv"):
+def missing_dates_for_tagesschau_urls(file=TS_URLS_FILENAME):
   dates_not_present = list(date_generator(START_DATE, END_DATE))
   # Identify missing tagesschau urls
   try:
@@ -73,7 +74,7 @@ def missing_dates_for_tagesschau_urls(file="tagesschau_urls.csv"):
       writer.writeheader()
   return dates_not_present
 
-def update_missing_dates_for_tagesschau_urls(missing_dates, file="tagesschau_urls.csv"):
+def update_missing_dates_for_tagesschau_urls(missing_dates, file=TS_URLS_FILENAME):
   new_rows = []
   try:
     for missing_date in missing_dates:
@@ -101,13 +102,13 @@ def update_missing_dates_for_tagesschau_urls(missing_dates, file="tagesschau_url
       writer.writerows(new_rows)
       new_rows = []
 
-def crawl_tagesschau_urls():
+def crawl_tagesschau_urls(file=TS_URLS_FILENAME):
   # Identify missing tagesschau
-  missing_dates = missing_dates_for_tagesschau_urls()
+  missing_dates = missing_dates_for_tagesschau_urls(file=file)
   # Update missing dates
   if missing_dates:
     print("There are {} missing dates, updating...".format(len(missing_dates)))
-    update_missing_dates_for_tagesschau_urls(missing_dates)
+    update_missing_dates_for_tagesschau_urls(missing_dates, file=TS_URLS_FILENAME)
     print("All dates present")
 
 if __name__ == "__main__":
