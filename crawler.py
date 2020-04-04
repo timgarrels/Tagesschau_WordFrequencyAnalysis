@@ -35,6 +35,7 @@ def date_generator(start_date, end_date):
     current_date = current_date + timedelta(days=1)
     yield current_date
 
+# ----- Retrieval of tagesschau show links -----
 def archive_soup(url):
   """Creates a bs4 soup from url"""
   return BeautifulSoup(requests.get(url).content, features="html.parser")
@@ -51,8 +52,10 @@ def tagesschau_urls_for_date(d):
   """Parses tagesschau show urls available for date"""
   return archive_url_to_tagesschau_urls(archive_url_for_date(d))
 
-def missing_dates_for_tagesschau_urls(file=TS_URLS_FILENAME):
-  dates_not_present = list(date_generator(START_DATE, END_DATE))
+def missing_dates_for_tagesschau_urls(start_date=START_DATE, end_date=END_DATE, file=TS_URLS_FILENAME):
+  """Determines dates in specified range that are not crawled entries in specified csv data yet
+  Returnes missing dates"""
+  dates_not_present = list(date_generator(start_date, end_date))
   # Identify missing tagesschau urls
   try:
     with open(file, "r") as ts_urls_file:
@@ -75,6 +78,7 @@ def missing_dates_for_tagesschau_urls(file=TS_URLS_FILENAME):
   return dates_not_present
 
 def update_missing_dates_for_tagesschau_urls(missing_dates, file=TS_URLS_FILENAME):
+  """Crawls tagesschau show links for missing_dates and appends found links to csv file"""
   new_rows = []
   try:
     for missing_date in missing_dates:
@@ -102,9 +106,11 @@ def update_missing_dates_for_tagesschau_urls(missing_dates, file=TS_URLS_FILENAM
       writer.writerows(new_rows)
       new_rows = []
 
-def crawl_tagesschau_urls(file=TS_URLS_FILENAME):
+def crawl_tagesschau_urls(start_date=START_DATE, end_date=END_DATE, file=TS_URLS_FILENAME):
+  """Identifies missing date entries, crawls tagesschau urls for date and adds as entry to file
+  This does not update already existing date entries!"""
   # Identify missing tagesschau
-  missing_dates = missing_dates_for_tagesschau_urls(file=file)
+  missing_dates = missing_dates_for_tagesschau_urls(start_date, end_date, file)
   # Update missing dates
   if missing_dates:
     print("There are {} missing dates, updating...".format(len(missing_dates)))
