@@ -60,7 +60,11 @@ def missing_dates_for_tagesschau_urls(file="tagesschau_urls.csv"):
       reader = DictReader(ts_urls_file, fieldnames=TS_URLS_CSV_SCHEMA)
       for row in reader:
         row_date = datetime.strptime(row["date"], "%Y-%m-%d").date()
-        dates_not_present.remove(row_date)
+        try:
+          dates_not_present.remove(row_date)
+        except ValueError:
+          # Date in csv not in requested range
+          pass
   except FileNotFoundError:
     print("Source not found, creating {}".format(file))
     # No data at all, create base csv to enable appending update
@@ -70,13 +74,14 @@ def missing_dates_for_tagesschau_urls(file="tagesschau_urls.csv"):
   return dates_not_present
 
 def update_missing_dates_for_tagesschau_urls(missing_dates, file="tagesschau_urls.csv"):
-  abort = False
   new_rows = []
   try:
     for missing_date in missing_dates:
       new_urls = tagesschau_urls_for_date(missing_date)
       # Do not add row if no ts urls present (imagine not uploaded yet, that date would never be updated again)
-      if new_urls:
+      if not new_urls:
+        print("No new tagesschau show available, skipping date {}".format(missing_date))
+      else:
         new_rows.append(dict(zip(TS_URLS_CSV_SCHEMA, (missing_date, json.dumps(new_urls)))))
       # Write after 15 rows are available, limits abort write to 15
       if len(new_urls) >= 15:
@@ -89,14 +94,12 @@ def update_missing_dates_for_tagesschau_urls(missing_dates, file="tagesschau_url
     print("Aborting update")
     print("Saving already crawled urls...")
     print("(You can exit, but will lose data that was already downloaded")
-    abort = True
   finally:
-    # Write after every rows on abort
-    if abort:
-      with open(file, "a") as f:
-        writer = DictWriter(f, fieldnames=TS_URLS_CSV_SCHEMA)
-        writer.writerows(new_rows)
-        new_rows = []
+    # Write every row on finish or abort
+    with open(file, "a") as f:
+      writer = DictWriter(f, fieldnames=TS_URLS_CSV_SCHEMA)
+      writer.writerows(new_rows)
+      new_rows = []
 
 def crawl_tagesschau_urls():
   # Identify missing tagesschau
@@ -105,6 +108,7 @@ def crawl_tagesschau_urls():
   if missing_dates:
     print("There are {} missing dates, updating...".format(len(missing_dates)))
     update_missing_dates_for_tagesschau_urls(missing_dates)
+    print("All dates present")
 
 if __name__ == "__main__":
   crawl_tagesschau_urls()
