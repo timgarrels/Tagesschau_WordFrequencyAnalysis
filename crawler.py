@@ -5,6 +5,7 @@ import requests
 from csv import DictReader, DictWriter
 import json
 import sys
+from urllib.request import urlretrieve
 
 
 CRAWL_URL = "https://www.tagesschau.de/multimedia/video/videoarchiv2~_date-{yyyymmdd}.html"
@@ -35,14 +36,14 @@ def date_generator(start_date, end_date):
     current_date = current_date + timedelta(days=1)
     yield current_date
 
-# ----- Utility for retrieval of tagesschau show urls -----
-def archive_soup(url):
+def beautiful_soup(url):
   """Creates a bs4 soup from url"""
   return BeautifulSoup(requests.get(url).content, features="html.parser")
 
+# ----- Utility for retrieval of tagesschau show urls -----
 def archive_url_to_tagesschau_urls(archive_url):
   """Parses tagesschau show urls (ts-\d*\.html) from an archive page"""
-  soup = archive_soup(archive_url)
+  soup = beautiful_soup(archive_url)
   # Tagesschau url scheme changes over time ("sendung[number].html", "ts[number].html", "ts-[number.html]"
   # Identifying by title instead
   ts_urls = soup.find_all("a", text="tagesschau")
@@ -167,6 +168,20 @@ def append_date_entries_for_tagesschau_urls(dates, file=TS_URLS_FILENAME):
       new_rows = []
     print("Appended {} new entries to {}".format(new_entry_counter, file))
 
+# ----- Retrieval of tagesschau metadata and subtitles -----
+def tagesschau_upload_date(tagesschau_soup):
+  """Returns tagesschau upload date. This is metadata in the tagesschau site, and not the actual upload date but the broadcasting date"""
+  # TODO
+  pass
+
+def tagesschau_subtile_url(tagesschau_soup):
+  """Returns the url for the subtitle xml for the specified tagesschau. Returns None if no subtiles present"""
+  # TODO
+  pass
+
+def download_tagesschau_subtitle(tageshow_soup):
+  """Downloads subtile xml for tagesschau. Preserves originalfile name"""
+  urlretrieve(tagesschau_subtile_url(tageshow_soup))
 
 if __name__ == "__main__":
   # Create tagesschau urls or fix missing urls in db
