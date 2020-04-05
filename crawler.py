@@ -172,10 +172,10 @@ def append_date_entries_for_tagesschau_urls(dates, file=TS_URLS_FILENAME):
 # ----- Retrieval of tagesschau metadata and subtitles -----
 def tagesschau_upload_date(tagesschau_soup):
   """Returns tagesschau upload date. This is metadata in the tagesschau site, and not the actual upload date but the broadcasting date"""
-  # TODO
-  pass
+  upload_date = tagesschau_soup.find("meta", {"itemprop": "uploadDate"})
+  return datetime.strptime(upload_date["content"], "%a %b %d %H:%M:%S %Z %Y")
 
-def tagesschau_subtile_url(tagesschau_soup):
+def tagesschau_subtitle_url(tagesschau_soup):
   """Returns the url for the subtitle xml for the specified tagesschau. Returns None if no subtiles present"""
   # TODO
   pass
