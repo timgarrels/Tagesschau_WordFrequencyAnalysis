@@ -170,4 +170,8 @@ def append_date_entries_for_tagesschau_urls(dates, file=TS_URLS_FILENAME):
 
 
 if __name__ == "__main__":
-  crawl_tagesschau_urls()
+  # Create tagesschau urls or fix missing urls in db
+  # This does not update outdated entries!
+  create_tagesschau_urls_csv_output_file_if_missing()
+  fix_missing_tagesschau_urls()
+
