@@ -80,25 +80,24 @@ def crawl_tagesschau_urls(dates, file=TS_URLS_FILENAME):
 def fix_missing_tagesschau_urls(start_date=START_DATE, end_date=END_DATE, file=TS_URLS_FILENAME):
   """Adds date entries in range if not there yet to db"""
   missing_date_entries = missing_dates_for_tagesschau_urls(start_date, end_date, file)
-  append_date_entries_for_tagesschau_urls(dates, file)
+  append_date_entries_for_tagesschau_urls(missing_date_entries, file)
 
 def missing_dates_for_tagesschau_urls(start_date=START_DATE, end_date=END_DATE, file=TS_URLS_FILENAME):
   """Determines dates in specified range that are not crawled entries in specified csv data yet
   Returnes missing dates"""
   dates_not_present = list(date_generator(start_date, end_date))
   # Identify missing tagesschau urls
-  try:
-    with open(file, "r") as ts_urls_file:
-      # Skip over header
-      ts_urls_file.readline()
-      reader = DictReader(ts_urls_file, fieldnames=TS_URLS_CSV_SCHEMA)
-      for row in reader:
-        row_date = date_from_csv_row(row)
-        try:
-          dates_not_present.remove(row_date)
-        except ValueError:
-          # Date in csv not in requested range
-          pass
+  with open(file, "r") as ts_urls_file:
+    # Skip over header
+    ts_urls_file.readline()
+    reader = DictReader(ts_urls_file, fieldnames=TS_URLS_CSV_SCHEMA)
+    for row in reader:
+      row_date = date_from_csv_row(row)
+      try:
+        dates_not_present.remove(row_date)
+      except ValueError:
+        # Date in csv not in requested range
+        pass
   return dates_not_present
 
 def update_crawls_tagesschau_urls(dates_to_update, file=TS_URLS_FILENAME):
