@@ -8,7 +8,8 @@ import sys
 from urllib.request import urlretrieve
 
 
-CRAWL_URL = "https://www.tagesschau.de/multimedia/video/videoarchiv2~_date-{yyyymmdd}.html"
+BASE_URL = "https://www.tagesschau.de"
+CRAWL_URL = BASE_URL + "/multimedia/video/videoarchiv2~_date-{yyyymmdd}.html"
 FIRST_ARCHIVE_ENTRY = date(2007, 4, 1)
 TS_URLS_FILENAME = "tagesschau_urls.csv"
 TS_URLS_CSV_SCHEMA = ["date", "urls"]
@@ -36,14 +37,14 @@ def date_generator(start_date, end_date):
     current_date = current_date + timedelta(days=1)
     yield current_date
 
-def beautiful_soup(url):
+def soup_from_url(url):
   """Creates a bs4 soup from url"""
   return BeautifulSoup(requests.get(url).content, features="html.parser")
 
 # ----- Utility for retrieval of tagesschau show urls -----
 def archive_url_to_tagesschau_urls(archive_url):
   """Parses tagesschau show urls (ts-\d*\.html) from an archive page"""
-  soup = beautiful_soup(archive_url)
+  soup = soup_from_url(archive_url)
   # Tagesschau url scheme changes over time ("sendung[number].html", "ts[number].html", "ts-[number.html]"
   # Identifying by title instead
   ts_urls = soup.find_all("a", text="tagesschau")
