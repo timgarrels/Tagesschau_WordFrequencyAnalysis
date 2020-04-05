@@ -77,6 +77,11 @@ def crawl_tagesschau_urls(dates, file=TS_URLS_FILENAME):
   create_tagesschau_urls_csv_output_file(file)
   append_date_entries_for_tagesschau_urls(dates, file)
 
+def fix_missing_tagesschau_urls(start_date=START_DATE, end_date=END_DATE, file=TS_URLS_FILENAME):
+  """Adds date entries in range if not there yet to db"""
+  missing_date_entries = missing_dates_for_tagesschau_urls(start_date, end_date, file)
+  append_date_entries_for_tagesschau_urls(dates, file)
+
 def missing_dates_for_tagesschau_urls(start_date=START_DATE, end_date=END_DATE, file=TS_URLS_FILENAME):
   """Determines dates in specified range that are not crawled entries in specified csv data yet
   Returnes missing dates"""
