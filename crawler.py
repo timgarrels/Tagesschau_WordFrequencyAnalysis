@@ -59,6 +59,11 @@ def date_from_csv_row(csv_row, format_string="%Y-%m-%d"):
   # TODO: This does not respect the TS_URLS_CSV_SCHEMA
   return datetime.strptime(csv_row["date"], format_string).date()
 
+def urls_from_csv_row(csv_row):
+  """Creates a python array from saves urls"""
+  # TODO: This does not respect the TS_URLS_CSV_SCHEMA
+  return json.loads(csv_row["urls"])
+
 # ----- Retrieval of tagesschau show urls -----
 def create_tagesschau_urls_csv_output_file(file=TS_URLS_FILENAME):
   """Creates output file. This deletes old csv file if existing!"""
@@ -175,10 +180,24 @@ def tagesschau_upload_date(tagesschau_soup):
   upload_date = tagesschau_soup.find("meta", {"itemprop": "uploadDate"})
   return datetime.strptime(upload_date["content"], "%a %b %d %H:%M:%S %Z %Y")
 
+def tagesschau_topics(tagesschau_soup):
+  # TODO: Implement & Document
+  """Returns teaser text"""
+
+  teaser = tagesschau_soup.find_all("p", {"class": "teasertext"})
+  if teaser:
+    return teaser[0].text
+  return None
+
 def tagesschau_subtitle_url(tagesschau_soup):
   """Returns the url for the subtitle xml for the specified tagesschau. Returns None if no subtiles present"""
   # TODO
-  pass
+  # Added by js (?), need reverse engineering
+  # <a class="track" type="application/ttaf+xml" href="/multimedia/video/untertitel-40535.xml" data-enabled="enabled" lang="de">EBUTT/ttml file</a>
+  subtitle_link_tag = tagesschau_soup.find("a", type="application/ttaf+xml")
+  if subtitle_link_tag:
+    return subtitle_link_tag["href"]
+  return None
 
 def download_tagesschau_subtitle(tageshow_soup):
   """Downloads subtile xml for tagesschau. Preserves originalfile name"""
@@ -189,4 +208,27 @@ if __name__ == "__main__":
   # This does not update outdated entries!
   create_tagesschau_urls_csv_output_file_if_missing()
   fix_missing_tagesschau_urls()
+
+  # TODO: Its 3:30 am and I dont have any schame anymore. Just want to get this done. Hacky, refactor _completely_
+  # Query data and save to output_file
+  output_file = "data.csv"
+  rows = []
+  with open(TS_URLS_FILENAME, "r") as f:
+    # skip header
+    f.readline()
+    for row in list(DictReader(f, fieldnames=TS_URLS_CSV_SCHEMA))[-5:]:  # TODO: Only crawl 5 newest dates, should be removed
+      date = date_from_csv_row(row)
+      urls = urls_from_csv_row(row)
+      urls_with_data = []
+      for url in urls:
+        name = url.split("/")[-1]
+        soup = soup_from_url(BASE_URL + url)
+        upload_date = tagesschau_upload_date(soup)
+        teaser = tagesschau_topics(soup)
+        urls_with_data.append({"name": name, "upload_date": str(upload_date), "teaser": teaser})
+    rows.append(dict(zip(TS_URLS_CSV_SCHEMA, (date, json.dumps(urls_with_data)))))
+  with open(output_file, "w") as f:
+    writer = DictWriter(f, fieldnames=TS_URLS_CSV_SCHEMA)
+    writer.writeheader()
+    writer.writerows(rows)
 
