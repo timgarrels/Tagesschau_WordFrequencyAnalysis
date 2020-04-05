@@ -35,13 +35,13 @@ def date_generator(start_date, end_date):
     current_date = current_date + timedelta(days=1)
     yield current_date
 
-# ----- Retrieval of tagesschau show links -----
+# ----- Utility for retrieval of tagesschau show urls -----
 def archive_soup(url):
   """Creates a bs4 soup from url"""
   return BeautifulSoup(requests.get(url).content, features="html.parser")
 
 def archive_url_to_tagesschau_urls(archive_url):
-  """Parses tagesschau show links (ts-\d*\.html) from an archive page"""
+  """Parses tagesschau show urls (ts-\d*\.html) from an archive page"""
   soup = archive_soup(archive_url)
   # Tagesschau url scheme changes over time ("sendung[number].html", "ts[number].html", "ts-[number.html]"
   # Identifying by title instead
@@ -51,6 +51,31 @@ def archive_url_to_tagesschau_urls(archive_url):
 def tagesschau_urls_for_date(d):
   """Parses tagesschau show urls available for date"""
   return archive_url_to_tagesschau_urls(archive_url_for_date(d))
+
+def date_from_csv_row(csv_row, format_string="%Y-%m-%d"):
+  """Creates a python date object from datestring"""
+  # TODO: This does not respect the TS_URLS_CSV_SCHEMA
+  return datetime.strptime(csv_row["date"], format_string).date()
+
+# ----- Retrieval of tagesschau show urls -----
+def create_tagesschau_urls_csv_output_file(file=TS_URLS_FILENAME):
+  """Creates output file. This deletes old csv file if existing!"""
+  with open(file, "w") as f:
+    writer = DictWriter(f, fieldnames=TS_URLS_CSV_SCHEMA)
+    writer.writeheader()
+
+def create_tagesschau_urls_csv_output_file_if_missing(file=TS_URLS_FILENAME):
+  """Creates output file if not already existing"""
+  try:
+    with open(file, "r") as ts_urls_file:
+      pass
+  except FileNotFoundError:
+    create_tagesschau_urls_csv_output_file(file)
+
+def crawl_tagesschau_urls(dates, file=TS_URLS_FILENAME):
+  """Crawls tagesschau urls for specified dates. Overwrites old csv db if existing"""
+  create_tagesschau_urls_csv_output_file(file)
+  append_date_entries_for_tagesschau_urls(dates, file)
 
 def missing_dates_for_tagesschau_urls(start_date=START_DATE, end_date=END_DATE, file=TS_URLS_FILENAME):
   """Determines dates in specified range that are not crawled entries in specified csv data yet
@@ -63,25 +88,54 @@ def missing_dates_for_tagesschau_urls(start_date=START_DATE, end_date=END_DATE, 
       ts_urls_file.readline()
       reader = DictReader(ts_urls_file, fieldnames=TS_URLS_CSV_SCHEMA)
       for row in reader:
-        row_date = datetime.strptime(row["date"], "%Y-%m-%d").date()
+        row_date = date_from_csv_row(row)
         try:
           dates_not_present.remove(row_date)
         except ValueError:
           # Date in csv not in requested range
           pass
-  except FileNotFoundError:
-    print("Source not found, creating {}".format(file))
-    # No data at all, create base csv to enable appending update
-    with open(file, "w") as f:
-      writer = DictWriter(f, fieldnames=TS_URLS_CSV_SCHEMA)
-      writer.writeheader()
   return dates_not_present
 
-def update_missing_dates_for_tagesschau_urls(missing_dates, file=TS_URLS_FILENAME):
-  """Crawls tagesschau show links for missing_dates and appends found links to csv file"""
+def update_crawls_tagesschau_urls(dates_to_update, file=TS_URLS_FILENAME):
+  """Crawls tagesschau urls for specified dates. Updates date entry in file if existing. Creates new date entry if not existing"""
+  # Remove all date entries to be updated from data
+  rows = []
+  with open(file, "r") as f:
+    # Skip over header
+    f.readline()
+    reader = DictReader(f, fieldnames=TS_URLS_CSV_SCHEMA)
+    for row in reader:
+      if date_from_csv_row(row) in dates_to_update:
+        # Do not append row that is to be updated
+        pass
+      else:
+        rows.append(row)
+  # Write back to file without date entries that are meant to be updated
+  with open(file, "w") as f:
+    writer = DictWriter(f, fieldnames=TS_URLS_CSV_SCHEMA)
+    writer.writeheader()
+    writer.writerows(rows)
+  # Append freshly crawled date entries for dates to be updated
+  append_date_entries_for_tagesschau_urls(dates_to_update, file)
+
+  def fix_missing_tagesschau_urls(start_date=START_DATE, end_date=END_DATE, file=TS_URLS_FILENAME):
+    """Identifies missing date entries in range, crawls tagesschau urls for date and adds as entry to file
+  This does not update already existing date entries!"""
+  # Identify missing tagesschau
+  missing_dates = missing_dates_for_tagesschau_urls(start_date, end_date, file)
+  # Update missing dates
+  if missing_dates:
+    print("There are {} missing dates, updating...".format(len(missing_dates)))
+    append_date_entries_for_tagesschau_urls(missing_dates, file=TS_URLS_FILENAME)
+    print("All dates present")
+
+def append_date_entries_for_tagesschau_urls(dates, file=TS_URLS_FILENAME):
+  """Crawls tagesschau show urls for missing_dates and appends found urls to csv file
+  Be careful: This could add an already existing date to your db"""
+  new_entry_counter = 0
   new_rows = []
   try:
-    for missing_date in missing_dates:
+    for missing_date in dates:
       new_urls = tagesschau_urls_for_date(missing_date)
       # Do not add row if no ts urls present (imagine not uploaded yet, that date would never be updated again)
       if not new_urls:
@@ -93,6 +147,7 @@ def update_missing_dates_for_tagesschau_urls(missing_dates, file=TS_URLS_FILENAM
         with open(file, "a") as f:
           writer = DictWriter(f, fieldnames=TS_URLS_CSV_SCHEMA)
           writer.writerows(new_rows)
+          new_entry_counter += len(new_rows)
           new_rows = []
 
   except (SystemExit, KeyboardInterrupt):
@@ -104,18 +159,10 @@ def update_missing_dates_for_tagesschau_urls(missing_dates, file=TS_URLS_FILENAM
     with open(file, "a") as f:
       writer = DictWriter(f, fieldnames=TS_URLS_CSV_SCHEMA)
       writer.writerows(new_rows)
+      new_entry_counter += len(new_rows)
       new_rows = []
+    print("Appended {} new entries to {}".format(new_entry_counter, file))
 
-def crawl_tagesschau_urls(start_date=START_DATE, end_date=END_DATE, file=TS_URLS_FILENAME):
-  """Identifies missing date entries, crawls tagesschau urls for date and adds as entry to file
-  This does not update already existing date entries!"""
-  # Identify missing tagesschau
-  missing_dates = missing_dates_for_tagesschau_urls(start_date, end_date, file)
-  # Update missing dates
-  if missing_dates:
-    print("There are {} missing dates, updating...".format(len(missing_dates)))
-    update_missing_dates_for_tagesschau_urls(missing_dates, file=TS_URLS_FILENAME)
-    print("All dates present")
 
 if __name__ == "__main__":
   crawl_tagesschau_urls()
