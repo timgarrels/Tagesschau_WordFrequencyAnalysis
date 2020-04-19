@@ -132,7 +132,7 @@ def main():
   # Crawl specific date for TSShows
   for show_url in ArchiveCrawler.tagesschau_show_urls_for_date(date.today()):
     try:
-      show = TSShow(TSUrl(show_url))
+      show = TSShow(show_url)
       print(show)
       show.download_subtitles()
       show.save()
