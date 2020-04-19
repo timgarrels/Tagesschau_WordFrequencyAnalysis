@@ -11,8 +11,8 @@ from urllib.request import urlretrieve
 BASE_URL = "https://www.tagesschau.de"
 CRAWL_URL = BASE_URL + "/multimedia/video/videoarchiv2~_date-{yyyymmdd}.html"
 FIRST_ARCHIVE_ENTRY = date(2007, 4, 1)
-TS_URLS_FILENAME = "tagesschau_urls_flat.csv"
-TS_URLS_CSV_SCHEMA = ["date", "urls"]
+TS_URLS_FILENAME = "tagesschau_urls.csv"
+TS_URLS_CSV_SCHEMA = ["date", "url", "subtitle"]
 # Which dates should be crawled, if None defaults to all dates till today
 START_DATE = None  # Provide date in form 'date(yyyy, mm, dd)'
 END_DATE = None  # Provide date in form 'date(yyyy, mm, dd)'
@@ -146,16 +146,24 @@ def append_date_entries_for_tagesschau_urls(dates, file=TS_URLS_FILENAME):
   new_entry_counter = 0
   new_rows = []
   try:
-    for missing_date in dates:
+    for i, missing_date in enumerate(dates):
+      if not i%10:
+        print("{}/{}".format(i, len(dates)))
       new_urls = tagesschau_urls_for_date(missing_date)
       # Do not add row if no ts urls present (imagine not uploaded yet, that date would never be updated again)
       if not new_urls:
         print("No new tagesschau show available, skipping date {}".format(missing_date))
       else:
         for url in new_urls:
-          new_rows.append(dict(zip(TS_URLS_CSV_SCHEMA, (missing_date, url))))
+          try:
+            subtitle = get_subtitle_for_ts_url(BASE_URL + url)
+          except Exception as e:
+            print("Something went wrong with retrieving the subtitle for", url)
+            print(e)
+            subtitle = "NONE"
+          new_rows.append(dict(zip(TS_URLS_CSV_SCHEMA, (missing_date, url, subtitle))))
       # Write after 15 rows are available, limits abort write to 15
-      if len(new_urls) >= 15:
+      if len(new_rows) >= 15:
         with open(file, "a") as f:
           writer = DictWriter(f, fieldnames=TS_URLS_CSV_SCHEMA)
           writer.writerows(new_rows)
@@ -176,13 +184,14 @@ def append_date_entries_for_tagesschau_urls(dates, file=TS_URLS_FILENAME):
     print("Appended {} new entries to {}".format(new_entry_counter, file))
 
 # ----- Retrieval of tagesschau metadata and subtitles -----
-def ts_url_to_video_number(ts_url):
-  """Finds the video number of a specific ts url"""
+def ts_url_to_video_url(ts_url):
+  """Finds the video url of a specific ts url"""
   soup = soup_from_url(ts_url)
   video_frame = soup.find("iframe")
   data_json = video_frame["data-ctrl-iframe"]
   data = json.loads(data_json.replace("'", "\""))
-  return data["action"]["default"]["src"].split("~")[0].split("/multimedia/video/video-")[1]
+
+  return data["action"]["default"]["src"].split("~")[0]
 
 def tagesschau_upload_date(tagesschau_soup):
   """Returns tagesschau upload date. This is metadata in the tagesschau site, and not the actual upload date but the broadcasting date"""
@@ -197,21 +206,65 @@ def tagesschau_topics(tagesschau_soup):
     return teaser[0].text
   return None
 
-def metadata_for_video_number(video_number):
-  """Retrives json metadata for video number"""
-  base = f"https://www.tagesschau.de/multimedia/video/video-{video_number}~mediajson_broadcastType-TS.json"
-  resp = requests.get(base)
+def metadata_for_video_url(video_url):
+  """Retrives json metadata for video url"""
+  url = BASE_URL + video_url + "~mediajson_broadcastType-TS.json"
+  resp = requests.get(url)
   return resp.json()
 
 def get_subtitle_for_ts_url(ts_url):
-  video_number = ts_url_to_video_number(ts_url)
-  metadata = metadata_for_video_number(video_number)
-  return metadata["_subtitleUrl"]
+  video_url = ts_url_to_video_url(ts_url)
+  metadata = metadata_for_video_url(video_url)
+  return metadata.get("_subtitleUrl")
+
+def add_subtiles_to_csv(file):
+  # Find rows without subtitle
+  rows = []
+  with open(TS_URLS_FILENAME, "r") as f:
+    reader = DictReader(f)
+    for row in reader:
+      if row.get("subtitle_url"):
+        # Remove tss that already have subtitle
+        pass
+      else:
+        rows.append(row)
+  # Add subtitle to row
+  new_entry_counter = 0
+  new_rows = []
+  rows.reverse()
+  try:
+    for i, row in enumerate(rows):
+      if not i % 10:
+        print("{}/{}".format(i, len(rows)))
+      subtitle_url = get_subtitle_for_ts_url(BASE_URL + row["url"])
+      if subtitle_url:
+        row["subtitle_url"] = subtitle_url
+      else:
+        row["subtitle_url"] = "NONE"
+      new_rows.append(row)
+      # Write after 15 rows are available, limits abort write to 15
+      if len(new_rows) >= 15:
+        with open(file, "a") as f:
+          writer = DictWriter(f, fieldnames=["date", "url", "subtitle_url"])
+          writer.writerows(new_rows)
+          new_entry_counter += len(new_rows)
+          new_rows = []
+
+  except (SystemExit, KeyboardInterrupt):
+    print("Aborting update")
+    print("Saving already crawled urls...")
+    print("(You can exit, but will lose data that was already downloaded")
+  finally:
+    # Write every row on finish or abort
+    with open(file, "a") as f:
+      writer = DictWriter(f, fieldnames=["date", "url", "subtitle_url"])
+      writer.writerows(new_rows)
+      new_entry_counter += len(new_rows)
+      new_rows = []
+    print("Appended {} new entries to {}".format(new_entry_counter, file))
 
 if __name__ == "__main__":
   # Create tagesschau urls or fix missing urls in db
   # This does not update outdated entries!
   create_tagesschau_urls_csv_output_file_if_missing()
   fix_missing_tagesschau_urls()
-
-
