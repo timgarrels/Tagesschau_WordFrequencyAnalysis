@@ -8,7 +8,8 @@ import sys
 from urllib.request import urlretrieve
 
 
-CRAWL_URL = "https://www.tagesschau.de/multimedia/video/videoarchiv2~_date-{yyyymmdd}.html"
+BASE_URL = "https://www.tagesschau.de"
+CRAWL_URL = BASE_URL + "/multimedia/video/videoarchiv2~_date-{yyyymmdd}.html"
 FIRST_ARCHIVE_ENTRY = date(2007, 4, 1)
 TS_URLS_FILENAME = "tagesschau_urls_flat.csv"
 TS_URLS_CSV_SCHEMA = ["date", "urls"]
@@ -36,14 +37,14 @@ def date_generator(start_date, end_date):
     current_date = current_date + timedelta(days=1)
     yield current_date
 
-def beautiful_soup(url):
+def soup_from_url(url):
   """Creates a bs4 soup from url"""
   return BeautifulSoup(requests.get(url).content, features="html.parser")
 
 # ----- Utility for crawling of tagesschau show urls -----
 def archive_url_to_tagesschau_urls(archive_url):
   """Parses tagesschau show urls (ts-\d*\.html) from an archive page"""
-  soup = beautiful_soup(archive_url)
+  soup = soup_from_url(archive_url)
   # Tagesschau url scheme changes over time ("sendung[number].html", "ts[number].html", "ts-[number.html]"
   # Identifying by title instead
   ts_urls = soup.find_all("a", text="tagesschau")
@@ -58,7 +59,12 @@ def date_from_csv_row(csv_row, format_string="%Y-%m-%d"):
   # TODO: This does not respect the TS_URLS_CSV_SCHEMA
   return datetime.strptime(csv_row["date"], format_string).date()
 
-# ----- Crawling of tagesschau show urls -----
+def urls_from_csv_row(csv_row):
+  """Creates a python array from saves urls"""
+  # TODO: This does not respect the TS_URLS_CSV_SCHEMA
+  return json.loads(csv_row["urls"])
+
+# ----- Retrieval of tagesschau show urls -----
 def create_tagesschau_urls_csv_output_file(file=TS_URLS_FILENAME):
   """Creates output file. This deletes old csv file if existing!"""
   with open(file, "w") as f:
@@ -172,15 +178,24 @@ def append_date_entries_for_tagesschau_urls(dates, file=TS_URLS_FILENAME):
 # ----- Retrieval of tagesschau metadata and subtitles -----
 def ts_url_to_video_number(ts_url):
   """Finds the video number of a specific ts url"""
-  soup = beautiful_soup(ts_url)
+  soup = soup_from_url(ts_url)
   video_frame = soup.find("iframe")
   data_json = video_frame["data-ctrl-iframe"]
   data = json.loads(data_json.replace("'", "\""))
   return data["action"]["default"]["src"].split("~")[0].split("/multimedia/video/video-")[1]
 
-def beautiful_soup(url):
-  """Creates a bs4 soup from url"""
-  return BeautifulSoup(requests.get(url).content, features="html.parser")
+def tagesschau_upload_date(tagesschau_soup):
+  """Returns tagesschau upload date. This is metadata in the tagesschau site, and not the actual upload date but the broadcasting date"""
+  upload_date = tagesschau_soup.find("meta", {"itemprop": "uploadDate"})
+  return datetime.strptime(upload_date["content"], "%a %b %d %H:%M:%S %Z %Y")
+
+def tagesschau_topics(tagesschau_soup):
+  # TODO: Implement & Document
+  """Returns teaser text"""
+  teaser = tagesschau_soup.find_all("p", {"class": "teasertext"})
+  if teaser:
+    return teaser[0].text
+  return None
 
 def metadata_for_video_number(video_number):
   """Retrives json metadata for video number"""
@@ -199,5 +214,4 @@ if __name__ == "__main__":
   create_tagesschau_urls_csv_output_file_if_missing()
   fix_missing_tagesschau_urls()
 
-  # 
 
