@@ -1,6 +1,7 @@
-from datetime import date
+from datetime import date, datetime
 import requests
 from bs4 import BeautifulSoup
+import json
 
 
 BASE_URL = "https://www.tagesschau.de"
@@ -30,6 +31,10 @@ class TSUrl():
       self._soup = BeautifulSoup(self.get_request_response.content, features="html.parser")
     return self._soup
 
+  @property
+  def json(self):
+    return self.get_request_response.json()
+
   def __repr__(self):
     return self.url
 
@@ -37,6 +42,42 @@ class TSShow():
   """A class modeling a tagesschau show. Url can be relative or absolute, request response and soup are lazy inits"""
   def __init__(self, url: TSUrl):
     self.url = url
+    self._video_url = None
+    self._air_date = None
+    self._subtitle_url = None
+    self._topics = None
+
+  @property
+  def video_url(self):
+    if not self._video_url:
+      iframe_data = self.url.soup.find("iframe")["data-ctrl-iframe"]
+      iframe_data_dict = json.loads(iframe_data.replace("'", "\""))
+      self._video_url = TSUrl(iframe_data_dict["action"]["default"]["src"].split("~")[0])
+    return self._video_url
+
+  @property
+  def air_date(self):
+    """Returns tagesschaus upload date. This is metadata in the tagesschau site, and not the actual upload date but the broadcasting date"""
+    upload_date = self.url.soup.find("meta", {"itemprop": "uploadDate"})
+    return datetime.strptime(upload_date["content"], "%a %b %d %H:%M:%S %Z %Y")
+
+  @property
+  def subtitle(self):
+    if not self._subtitle_url:
+      metadata_url = TSUrl(self.video_url.url + "~mediajson_broadcastType-TS.json")
+      self._subtitle_url = TSUrl(metadata_url.json.get("_subtitleUrl"))
+    return self._subtitle_url
+
+  @property
+  def topics(self):
+    if not self._topics:
+      teasers = self.url.soup.find_all("p", {"class": "teasertext"})
+      topics = None
+      for teaser in teasers:
+        if "Themen der Sendung" in teaser.text:
+          self._topics = teaser.text
+          break
+    return self._topics
 
   def __repr__(self):
     return str(self.url)
@@ -60,6 +101,11 @@ def main():
   for show_url in ArchiveCrawler.tagesschau_show_urls_for_date(date.today()):
     show = TSShow(show_url)
     print(show)
+    # Retrieve data
+    print(show.video_url)
+    print(show.air_date)
+    print(show.subtitle)
+    print(show.topics)
 
 if __name__ == "__main__":
   main()
