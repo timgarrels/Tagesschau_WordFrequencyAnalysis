@@ -58,7 +58,7 @@ class TSShow():
     """Urls might be invalid or no subtitles might exist. Validate by lookup"""
     try:
       self.subtitle_url
-    except TypeError:
+    except (TypeError, AttributeError):
       # Some property not found
       return False
     return True
@@ -68,7 +68,11 @@ class TSShow():
     if not self._video_url:
       iframe_data = self.url.soup.find("iframe")["data-ctrl-iframe"]
       iframe_data_dict = json.loads(iframe_data.replace("'", "\""))
-      self._video_url = TSUrl(iframe_data_dict["action"]["default"]["src"].split("~")[0])
+      src = iframe_data_dict["action"]["default"]["src"].split("~")[0]
+      # Necessary as some ts show sites have no src, example: https://www.tagesschau.de/multimedia/sendung/ts2682.html at the 20.04.2020 12:08 AM
+      if src == "":
+        raise AttributeError(f"{self} has no video src!")
+      self._video_url = TSUrl(src)
     return self._video_url
 
   @property
