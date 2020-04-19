@@ -87,21 +87,29 @@ class TSShow():
     """Creates a file named after show specific url part and dumps property dict into it"""
     filename = self.url.url.split("/")[-1]
     filename.replace(".html", "")
-    with open(Path(TS_DIRECTORY).joinpath(filename), "w") as f:
-      f.write(json.dumps({
-        "url": self.url.url,
-        "video_url": self.video_url.url,
-        "air_date": str(self.air_date),
-        "subtitle_url": self.subtitle_url.url,
-        "topics": self.topics,
-      }))
+    path = Path(TS_DIRECTORY).joinpath(filename)
+    if path.exists():
+      print(f"{path} already exists")
+    else:
+      with open(path, "w") as f:
+        f.write(json.dumps({
+          "url": self.url.url,
+          "video_url": self.video_url.url,
+          "air_date": str(self.air_date),
+          "subtitle_url": self.subtitle_url.url,
+          "topics": self.topics,
+        }))
 
   def download_subtitles(self):
     """Downloads subtitle file and stores it to subtitle_dir"""
     resp = requests.get(self.subtitle_url.url)
     filename = self.subtitle_url.url.split("/")[-1]
-    with open(Path(SUBTITLE_DIR).joinpath(filename), "w") as f:
-      f.write(str(resp.content))
+    path = Path(SUBTITLE_DIR).joinpath(filename)
+    if path.exists():
+      print(f"{path} already exists")
+    else:
+      with open(path, "w") as f:
+        f.write(str(resp.content))
 
   def __repr__(self):
     return str(self.url)
@@ -123,10 +131,17 @@ class ArchiveCrawler():
 def main():
   # Crawl specific date for TSShows
   for show_url in ArchiveCrawler.tagesschau_show_urls_for_date(date.today()):
-    show = TSShow(show_url)
-    print(show)
-    show.download_subtitles()
-    show.save()
+    try:
+      show = TSShow(show_url)
+      print(show)
+      show.download_subtitles()
+      show.save()
+    except Exception as e:
+      print("Something went wrong")
+      with open("error.log", "a") as f:
+        f.write(show)
+        f.write(e)
+        f.write("\n\n")
 
 if __name__ == "__main__":
   main()
