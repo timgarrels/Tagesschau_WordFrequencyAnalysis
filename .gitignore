@@ -1,3 +1,7 @@
+invalid_shows
+/ts_shows
+/ts_subtitles
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
