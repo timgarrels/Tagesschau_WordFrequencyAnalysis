@@ -51,6 +51,15 @@ class TSShow():
     self._subtitle_url = None
     self._topics = None
 
+  def valid(self):
+    """Urls might be invalid or no subtitles might exist. Validate by lookup"""
+    try:
+      self.subtitle_url
+    except TypeError:
+      # Some property not found
+      return False
+    return True
+
   @property
   def video_url(self):
     if not self._video_url:
@@ -131,17 +140,16 @@ class ArchiveCrawler():
 def main():
   # Crawl specific date for TSShows
   for show_url in ArchiveCrawler.tagesschau_show_urls_for_date(date.today()):
-    try:
-      show = TSShow(show_url)
+    show = TSShow(show_url)
+    if show.valid():
       print(show)
       show.download_subtitles()
       show.save()
-    except Exception as e:
-      print("Something went wrong")
-      with open("error.log", "a") as f:
-        f.write(show)
-        f.write(e)
-        f.write("\n\n")
+    else:
+      print("Invalid Show!")
+      with open("invalid_shows", "a") as f:
+        f.write(str(show))
+        f.write("\n")
 
 if __name__ == "__main__":
   main()
