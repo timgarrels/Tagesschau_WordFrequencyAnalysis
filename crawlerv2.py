@@ -12,6 +12,7 @@ SUBTITLE_DIR = "ts_subtitles"
 Path(SUBTITLE_DIR).mkdir(parents=True, exist_ok=True)
 FIRST_ARCHIVE_ENTRY = date(2007, 4, 1)
 INVALID_SHOWS_LOG_FILE = "invalid_shows"
+Path(INVALID_SHOWS_LOG_FILE).touch()
 
 
 class TSUrl():
