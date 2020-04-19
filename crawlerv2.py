@@ -2,10 +2,14 @@ from datetime import date, datetime
 import requests
 from bs4 import BeautifulSoup
 import json
-
+from pathlib import Path
 
 BASE_URL = "https://www.tagesschau.de"
 RELATIVE_ARCHIVE_URL_AS_FORMAT_STRING = "/multimedia/video/videoarchiv2~_date-{yyyymmdd}.html"
+TS_DIRECTORY = "ts_shows"
+Path(TS_DIRECTORY).mkdir(parents=True, exist_ok=True)
+SUBTITLE_DIR = "ts_subtitles"
+Path(SUBTITLE_DIR).mkdir(parents=True, exist_ok=True)
 
 
 class TSUrl():
@@ -62,7 +66,7 @@ class TSShow():
     return datetime.strptime(upload_date["content"], "%a %b %d %H:%M:%S %Z %Y")
 
   @property
-  def subtitle(self):
+  def subtitle_url(self):
     if not self._subtitle_url:
       metadata_url = TSUrl(self.video_url.url + "~mediajson_broadcastType-TS.json")
       self._subtitle_url = TSUrl(metadata_url.json.get("_subtitleUrl"))
@@ -78,6 +82,26 @@ class TSShow():
           self._topics = teaser.text
           break
     return self._topics
+
+  def save(self):
+    """Creates a file named after show specific url part and dumps property dict into it"""
+    filename = self.url.url.split("/")[-1]
+    filename.replace(".html", "")
+    with open(Path(TS_DIRECTORY).joinpath(filename), "w") as f:
+      f.write(json.dumps({
+        "url": self.url.url,
+        "video_url": self.video_url.url,
+        "air_date": str(self.air_date),
+        "subtitle_url": self.subtitle_url.url,
+        "topics": self.topics,
+      }))
+
+  def download_subtitles(self):
+    """Downloads subtitle file and stores it to subtitle_dir"""
+    resp = requests.get(self.subtitle_url.url)
+    filename = self.subtitle_url.url.split("/")[-1]
+    with open(Path(SUBTITLE_DIR).joinpath(filename), "w") as f:
+      f.write(str(resp.content))
 
   def __repr__(self):
     return str(self.url)
@@ -101,11 +125,8 @@ def main():
   for show_url in ArchiveCrawler.tagesschau_show_urls_for_date(date.today()):
     show = TSShow(show_url)
     print(show)
-    # Retrieve data
-    print(show.video_url)
-    print(show.air_date)
-    print(show.subtitle)
-    print(show.topics)
+    show.download_subtitles()
+    show.save()
 
 if __name__ == "__main__":
   main()
