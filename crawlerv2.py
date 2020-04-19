@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 import requests
 from bs4 import BeautifulSoup
 import json
@@ -10,6 +10,8 @@ TS_DIRECTORY = "ts_shows"
 Path(TS_DIRECTORY).mkdir(parents=True, exist_ok=True)
 SUBTITLE_DIR = "ts_subtitles"
 Path(SUBTITLE_DIR).mkdir(parents=True, exist_ok=True)
+FIRST_ARCHIVE_ENTRY = date(2007, 4, 1)
+INVALID_SHOWS_LOG_FILE = "invalid_shows"
 
 
 class TSUrl():
@@ -137,19 +139,31 @@ class ArchiveCrawler():
     ts_urls = ArchiveCrawler._archive_url_for_date(d).soup.find_all("a", text="tagesschau")
     return [TSUrl(url["href"]) for url in ts_urls]
 
+def date_generator(start_date, end_date):
+  """Generator for dates in range. Inclusive!"""
+  days_passed = (end_date - start_date).days
+  current_date = start_date
+  yield current_date
+  for n in range(days_passed):
+    current_date = current_date + timedelta(days=1)
+    yield current_date
+
 def main():
-  # Crawl specific date for TSShows
-  for show_url in ArchiveCrawler.tagesschau_show_urls_for_date(date.today()):
-    show = TSShow(show_url)
-    if show.valid():
-      print(show)
-      show.download_subtitles()
-      show.save()
-    else:
-      print("Invalid Show!")
-      with open("invalid_shows", "a") as f:
-        f.write(str(show))
-        f.write("\n")
+  # Crawl all dates
+  for d in date_generator(FIRST_ARCHIVE_ENTRY, date.today()):
+    # Find shows for date
+    for show_url in ArchiveCrawler.tagesschau_show_urls_for_date(d):
+      # Crawl show and save
+      show = TSShow(show_url)
+      if show.valid():
+        print(show)
+        show.download_subtitles()
+        show.save()
+      else:
+        print("Invalid Show!")
+        with open(INVALID_SHOWS_LOG_FILE, "a") as f:
+          f.write(str(show))
+          f.write("\n")
 
 if __name__ == "__main__":
   main()
