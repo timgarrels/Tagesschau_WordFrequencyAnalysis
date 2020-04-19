@@ -149,21 +149,30 @@ def date_generator(start_date, end_date):
     yield current_date
 
 def main():
+  # Load invalid dates
+  with open(INVALID_SHOWS_LOG_FILE, "r") as f:
+    invalid_shows = set([show.replace("\n", "") for show in f.readlines()])
+
   # Crawl all dates
   for d in date_generator(FIRST_ARCHIVE_ENTRY, date.today()):
     # Find shows for date
     for show_url in ArchiveCrawler.tagesschau_show_urls_for_date(d):
-      # Crawl show and save
-      show = TSShow(show_url)
-      if show.valid():
-        print(show)
-        show.download_subtitles()
-        show.save()
+      if show_url.url in invalid_shows:
+        # Show already identified as invalid, skip
+        print("Known invalid! Skipping", str(show_url))
       else:
-        print("Invalid Show!")
-        with open(INVALID_SHOWS_LOG_FILE, "a") as f:
-          f.write(str(show))
-          f.write("\n")
+        # Crawl show and save
+        show = TSShow(show_url)
+        if show.valid():
+          print(show)
+          # Sequential I/O Operations, slooow
+          show.download_subtitles()
+          show.save()
+        else:
+          print("Invalid Show!", str(show_url))
+          with open(INVALID_SHOWS_LOG_FILE, "a") as f:
+            f.write(str(show))
+            f.write("\n")
 
 if __name__ == "__main__":
   main()
