@@ -40,7 +40,7 @@ def beautiful_soup(url):
   """Creates a bs4 soup from url"""
   return BeautifulSoup(requests.get(url).content, features="html.parser")
 
-# ----- Utility for retrieval of tagesschau show urls -----
+# ----- Utility for crawling of tagesschau show urls -----
 def archive_url_to_tagesschau_urls(archive_url):
   """Parses tagesschau show urls (ts-\d*\.html) from an archive page"""
   soup = beautiful_soup(archive_url)
@@ -58,7 +58,7 @@ def date_from_csv_row(csv_row, format_string="%Y-%m-%d"):
   # TODO: This does not respect the TS_URLS_CSV_SCHEMA
   return datetime.strptime(csv_row["date"], format_string).date()
 
-# ----- Retrieval of tagesschau show urls -----
+# ----- Crawling of tagesschau show urls -----
 def create_tagesschau_urls_csv_output_file(file=TS_URLS_FILENAME):
   """Creates output file. This deletes old csv file if existing!"""
   with open(file, "w") as f:
@@ -85,7 +85,7 @@ def fix_missing_tagesschau_urls(start_date=START_DATE, end_date=END_DATE, file=T
 
 def missing_dates_for_tagesschau_urls(start_date=START_DATE, end_date=END_DATE, file=TS_URLS_FILENAME):
   """Determines dates in specified range that are not crawled entries in specified csv data yet
-  Returnes missing dates"""
+  Returns missing dates"""
   dates_not_present = list(date_generator(start_date, end_date))
   # Identify missing tagesschau urls
   with open(file, "r") as ts_urls_file:
