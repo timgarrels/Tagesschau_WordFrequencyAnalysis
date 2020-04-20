@@ -6,6 +6,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from os import getenv
 import traceback
+from urllib.request import urlretrieve
 
 
 BASE_URL = "https://www.tagesschau.de"
@@ -125,14 +126,12 @@ class TSShow():
 
   def download_subtitles(self):
     """Downloads subtitle file and stores it to subtitle_dir"""
-    resp = requests.get(self.subtitle_url.url)
     filename = self.subtitle_url.url.split("/")[-1]
     path = Path(SUBTITLE_DIR).joinpath(filename)
     if path.exists():
       print(f"{path} already exists")
     else:
-      with open(path, "w") as f:
-        f.write(str(resp.content))
+      urlretrieve(self.subtitle_url.url, path)
 
   def __repr__(self):
     return str(self.url)
