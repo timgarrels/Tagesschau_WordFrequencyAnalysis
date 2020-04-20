@@ -3,6 +3,10 @@ import requests
 from bs4 import BeautifulSoup
 import json
 from pathlib import Path
+from dotenv import load_dotenv
+from os import getenv
+import traceback
+
 
 BASE_URL = "https://www.tagesschau.de"
 RELATIVE_ARCHIVE_URL_AS_FORMAT_STRING = "/multimedia/video/videoarchiv2~_date-{yyyymmdd}.html"
@@ -14,6 +18,9 @@ FIRST_ARCHIVE_ENTRY = date(2007, 4, 1)
 INVALID_SHOWS_LOG_FILE = "invalid_shows"
 Path(INVALID_SHOWS_LOG_FILE).touch()
 
+load_dotenv(".env")
+TELEGRAM_TOKEN = getenv("TOKEN")
+TELEGRAM_CHAT_ID = getenv("CHAT_ID")
 
 class TSUrl():
   """A class modeling a url of tagesschau.de that is requestable and soupable"""
@@ -153,31 +160,62 @@ def date_generator(start_date, end_date):
     current_date = current_date + timedelta(days=1)
     yield current_date
 
-def main():
+def crawl_date(d, known_invalid_shows=set()):
+  """Crawls TSShows for date d. Saves them to drive, returns count of newly saved shows"""
+  new_counter = 0
+  # Find shows for date
+  for show_url in ArchiveCrawler.tagesschau_show_urls_for_date(d):
+    if show_url.url in known_invalid_shows:
+      # Show already identified as invalid, skip
+      print("Known invalid! Skipping", str(show_url))
+    else:
+      # Crawl show and save
+      show = TSShow(show_url)
+      if show.valid():
+        print(show)
+        # Sequential I/O Operations, slooow
+        show.download_subtitles()
+        show.save()
+        new_counter += 1
+      else:
+        print("Invalid Show!", str(show_url))
+        with open(INVALID_SHOWS_LOG_FILE, "a") as f:
+          f.write(str(show))
+          f.write("\n")
+  return new_counter
+
+def crawl_all():
   # Load invalid dates
   with open(INVALID_SHOWS_LOG_FILE, "r") as f:
     invalid_shows = set([show.replace("\n", "") for show in f.readlines()])
 
   # Crawl all dates
   for d in date_generator(FIRST_ARCHIVE_ENTRY, date.today()):
-    # Find shows for date
-    for show_url in ArchiveCrawler.tagesschau_show_urls_for_date(d):
-      if show_url.url in invalid_shows:
-        # Show already identified as invalid, skip
-        print("Known invalid! Skipping", str(show_url))
-      else:
-        # Crawl show and save
-        show = TSShow(show_url)
-        if show.valid():
-          print(show)
-          # Sequential I/O Operations, slooow
-          show.download_subtitles()
-          show.save()
-        else:
-          print("Invalid Show!", str(show_url))
-          with open(INVALID_SHOWS_LOG_FILE, "a") as f:
-            f.write(str(show))
-            f.write("\n")
+    crawl_date(d, invalid_shows)
+
+def alert(s):
+  api_url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage?chat_id={TELEGRAM_CHAT_ID}&text={s}"
+  resp = requests.get(api_url)
+  success = False
+  try:
+    success = resp.json().get("ok", False)
+  except:
+    pass
+  print(f"Alert '{s}' successful") if success else print("Alert '{s}' failed\n", json.dumps(resp))
+
+
+def main():
+  """Daily crawl. Crawl last three days, alert if no new appeared"""
+  try:
+    for daydelta in range(3):
+      d = date.today() - timedelta(days=daydelta)
+      new_shows = crawl_date(d)
+      if not new_shows:
+        alert(f"No new and no existing shows for {str(d)}")
+  # Dirty hack to know when script went down unexpectedly
+  except Exception as e:
+    alert(f"Script failure on {date.today()}!\n{str(e)}\n{traceback.format_exc()}",)
+
 
 if __name__ == "__main__":
   main()
