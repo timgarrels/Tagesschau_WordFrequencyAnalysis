@@ -81,7 +81,6 @@ def shrink_data_by_factor(data, factor):
         break
   divisor = factor
 
-  print(len(data.keys()))
   new_data = {}
   # Breaking keys into evenly sized chucks (divisor equals chunk size)
   sorted_keys = sorted(data.keys())
@@ -94,8 +93,32 @@ def shrink_data_by_factor(data, factor):
           new_data[chunk[0]][word] += count
       else:
         new_data[chunk[0]] = word_dict
-  print(len(new_data.keys()))
   return new_data  
+
+def create_plot(words):
+  # Get and shrink data
+  data = data_for_words(words)
+  data = shrink_data_by_factor(data, 25)
+  # Labels
+  plt.xlabel("Date")
+  plt.ylabel("Word-Count")
+  
+  # Create graphs
+  for word in words:
+    # Sort by date as dicts are not sorted
+    x = sorted(data.keys())
+    y = [data[date][word] for date in x]
+
+    # Draw plot and space beneath
+    plt.plot_date(x, y, linestyle='solid', marker=None, alpha=(1/len(words))*4)
+    plt.fill_between(x, y, alpha=0.2)
+
+  # Design
+  plt.gca().spines['top'].set_visible(False)
+  plt.gca().spines['right'].set_visible(False)
+  plt.legend(words)
+
+  return plt
 
 
 def main():
@@ -103,19 +126,8 @@ def main():
   words = sys.argv[1:]
   if not len(words):
     sys.exit("provide words to plot!")
-  data = data_for_words(words)
-  data = shrink_data_by_factor(data, 25)
-
-  plt.xlabel("Date")
-  plt.ylabel("Word-Count")
-  
-  for word in words:
-    x = sorted(data.keys())
-    y = [data[date][word] for date in x]
-
-    plt.plot_date(x, y, linestyle='solid', marker=None, alpha=1/len(words))
-  plt.legend(words)
-  plt.show()
+  plt = create_plot(words)
+  plt.show()  
 
 if __name__ == "__main__":
   main()
