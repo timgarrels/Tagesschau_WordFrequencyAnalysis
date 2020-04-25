@@ -25,6 +25,8 @@ for i, subtitle_file in enumerate(all_files):
       clean_text = ' '.join(words)
     except:
       print(subtitle_file)
+      # Reset clean text, otherwise old clean text would be written
+      clean_text = ''
   with open(SUBTITLE_DIR + "/" + subtitle_file + ".clean_text", "w") as f:
     f.write(clean_text)
 
