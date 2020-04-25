@@ -1,4 +1,4 @@
-# Tagesschau Subtitle Word Occurences
+# Tagesschau Subtitle Word Occurrences
 
 This repo enables the scraping, cleaning and analyzing of the subtitles of the tagesschau, the German daily news show.
 
@@ -15,7 +15,7 @@ pip3 install -r requirements.txt
 ```
 
 ## Usage
-Crawl all subtiltes
+Crawl all subtitles
 ``` python
 python3
 > import crawlerv2.py
@@ -38,6 +38,6 @@ You now can plot word occurrences over time by calling
 
 ## Inspiration
 
-At the 36C3, the Chaos Communication Congress of the Chaos Comupter Club e.V., the talk [Vom Ich zum Wir - Gesellschaftlicher Wandel in den Reden im Bundestag](https://media.ccc.de/v/36c3-10993-vom_ich_zum_wir) was held by maha and Kai Biermann. 
+At the 36C3, the Chaos Communication Congress of the Chaos Computer Club e.V., the talk [Vom Ich zum Wir - Gesellschaftlicher Wandel in den Reden im Bundestag](https://media.ccc.de/v/36c3-10993-vom_ich_zum_wir) was held by maha and Kai Biermann. 
 
 Tl;dw: They created [this tool](https://www.zeit.de/politik/deutschland/2019-09/bundestag-jubilaeum-70-jahre-parlament-reden-woerter-sprache-wandel), which makes a word occurrence analysis over time with the protocols of the German Bundestag.
