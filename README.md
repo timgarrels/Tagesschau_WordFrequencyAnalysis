@@ -39,10 +39,7 @@ You now can plot word occurences over time by calling
 ## Inspiration
 
 At the 36C3, the Chaos Communication Congress of the Chaos Comupter Club e.V. this talk was held:
-```
-"https://media.ccc.de/v/36c3-10993-vom_ich_zum_wir",  Vom Ich zum Wir
-Gesellschaftlicher Wandel in den Reden im Bundestag
-
+[Vom Ich zum Wir - Gesellschaftlicher Wandel in den Reden im Bundestag](https://media.ccc.de/v/36c3-10993-vom_ich_zum_wir)  
 maha and Kai Biermann 
 ```
 Tl;dw: They created [this tool](https://www.zeit.de/politik/deutschland/2019-09/bundestag-jubilaeum-70-jahre-parlament-reden-woerter-sprache-wandel), which makes a word occurence analysis over time with the protocols of the German Bundestag.
