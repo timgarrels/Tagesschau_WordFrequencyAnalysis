@@ -22,7 +22,7 @@ python3
 > crawlerv2.crawl_all()  # This will take some time!
 ```
 Or just crawl today
-`python3 crawlerv2.py`
+```python3 crawlerv2.py```
 
 Parse and clean data
 ```bash 
@@ -31,10 +31,10 @@ python3 clean_text.py
 ```
 
 Finally create your word occurrence db
-`python3 clean_text_to_sql.py`
+```python3 clean_text_to_sql.py```
 
 You now can plot word occurrences over time by calling
-`python3 word_frequency_plotter.py word1 word2 wordn`
+```python3 word_frequency_plotter.py word1 word2 wordn```
 
 ## Inspiration
 
