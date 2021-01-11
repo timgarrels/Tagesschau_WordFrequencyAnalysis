@@ -1,7 +1,4 @@
-invalid_shows
-/ts_shows
-/ts_subtitles
-
+*.db
 .env
 
 .vscode/
