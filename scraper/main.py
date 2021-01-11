@@ -13,16 +13,18 @@ def init_db():
     conn = sqlite3.connect(config.DB_NAME)
     c = conn.cursor()
     c.execute(
-        "CREATE TABLE shows(air_date text, subtitle_url text, video_url text, topics text)"
+        "CREATE TABLE shows(air_date text, url text, subtitle_url text, video_url text, topics text)"
     )
     conn.commit()
     conn.close()
 
 def add_data_to_db(data):
+    if not exists(config.DB_NAME):
+        init_db()
     conn = sqlite3.connect(config.DB_NAME)
     c = conn.cursor()
     c.execute(
-        f'INSERT INTO shows VALUES (\'{str(data["air_date"])}\', \'{str(data["subtitle_url"])}\', \'{str(data["video_url"])}\', \'{str(data["topics"])}\')'
+        f'INSERT INTO shows VALUES (\'{str(data["air_date"])}\', \'{str(data["url"])}\', \'{str(data["subtitle_url"])}\', \'{str(data["video_url"])}\', \'{str(data["topics"])}\')'
     )
     conn.commit()
     conn.close()
@@ -38,10 +40,9 @@ def scrape(d: date):
     return data
 
 def scrape_all():
-    if not exists(config.DB_NAME):
-        init_db()
     dates = date_generator(config.FIRST_ARCHIVE_ENTRY, date.today())
     for d in dates:
+        print(f"Scraping {d}")
         try:
             data = scrape(d)
             add_data_to_db(data)
@@ -50,8 +51,6 @@ def scrape_all():
             pass
 
 def main():
-    if not exists(config.DB_NAME):
-        init_db()
     # Daily scrape
     try:
         data = scrape(date.today())

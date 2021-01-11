@@ -20,8 +20,13 @@ def scrapeTSShows(
     # Always necessary as some archive entries are wrong
     extractors["air_date"] = extractor.tsShow_extractor.air_date_extractor
 
+    if not tsShows:
+        # Do not return empty data, if no tsShow is found
+        return {"air_date": airDate}
+
     data = {}
     for tsShow in tsShows:
+        data["url"] = tsShow.url
         for extractor_name, extractor_function in extractors.items():
             try:
                 data[extractor_name] = extractor_function(tsShow.soup)
