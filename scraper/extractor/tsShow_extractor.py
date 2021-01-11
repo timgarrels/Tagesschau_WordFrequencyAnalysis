@@ -34,4 +34,4 @@ def topics_extractor(soup):
 def air_date_extractor(soup) -> datetime:
     """Returns tagesschaus upload date. This is metadata in the tagesschau site, and not the actual upload date but the broadcasting date"""
     upload_date = soup.find("meta", {"itemprop": "uploadDate"})
-    return datetime.strptime(upload_date["content"], "%a %b %d %H:%M:%S %Z %Y")
+    return datetime.strptime(upload_date["content"], "%a %b %d %H:%M:%S %Z %Y").date()

@@ -1,5 +1,5 @@
 import sqlite3
-from datetime import date
+from datetime import date, datetime
 from os.path import exists
 
 import scraper
@@ -24,7 +24,8 @@ def add_data_to_db(data):
     conn = sqlite3.connect(config.DB_NAME)
     c = conn.cursor()
     c.execute(
-        f'INSERT INTO shows VALUES (\'{str(data["air_date"])}\', \'{str(data["url"])}\', \'{str(data["subtitle_url"])}\', \'{str(data["video_url"])}\', \'{str(data["topics"])}\')'
+        f'INSERT INTO shows VALUES (\'{str(data["air_date"])}\',' + \
+            f'\'{str(data.get("url"))}\', \'{str(data.get("subtitle_url"))}\', \'{str(data.get("video_url"))}\', \'{str(data.get("topics"))}\')'
     )
     conn.commit()
     conn.close()
@@ -41,6 +42,22 @@ def scrape(d: date):
 
 def scrape_all():
     dates = date_generator(config.FIRST_ARCHIVE_ENTRY, date.today())
+    for d in dates:
+        print(f"Scraping {d}")
+        try:
+            data = scrape(d)
+            add_data_to_db(data)
+        except AttributeError:
+            # No Archive found
+            pass
+
+def scrape_missing():
+    conn = sqlite3.connect(config.DB_NAME)
+    c = conn.cursor()
+    present_dates = [e[0] for e in list(c.execute('SELECT air_date from shows;'))]
+    conn.close()
+    all_dates = date_generator(config.FIRST_ARCHIVE_ENTRY, date.today())
+    dates = [d for d in all_dates if str(d) not in present_dates]
     for d in dates:
         print(f"Scraping {d}")
         try:
