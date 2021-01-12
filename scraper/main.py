@@ -21,14 +21,17 @@ def init_db():
 def add_data_to_db(data):
     if not exists(config.DB_NAME):
         init_db()
-    conn = sqlite3.connect(config.DB_NAME)
-    c = conn.cursor()
-    c.execute(
-        f'INSERT INTO shows VALUES (\'{str(data["air_date"])}\',' + \
-            f'\'{str(data.get("url"))}\', \'{str(data.get("subtitle_url"))}\', \'{str(data.get("video_url"))}\', \'{str(data.get("topics"))}\')'
-    )
-    conn.commit()
-    conn.close()
+    try:
+        conn = sqlite3.connect(config.DB_NAME)
+        c = conn.cursor()
+        c.execute(
+            f'INSERT INTO shows VALUES (\'{str(data["air_date"])}\',' + \
+                f'\'{str(data.get("url"))}\', \'{str(data.get("subtitle_url"))}\', \'{str(data.get("video_url"))}\', \'{str(data.get("topics"))}\')'
+        )
+        conn.commit()
+        conn.close()
+    except sqlite3.OperationalError as e:
+        exit(f"Error in adding data to the db: {data}\nTrace: {e}")
 
 def scrape(d: date):
     data = scraper.scrapeTSShows(
