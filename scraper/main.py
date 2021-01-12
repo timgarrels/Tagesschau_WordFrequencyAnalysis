@@ -1,12 +1,12 @@
 import sqlite3
 from datetime import date, datetime
 from os.path import exists
+import json
 
 import scraper
 import extractor.tsShow_extractor
 import config
 from util.date_generator import date_generator
-
 
 
 def init_db():
@@ -26,7 +26,7 @@ def add_data_to_db(data):
         c = conn.cursor()
         c.execute(
             f'INSERT INTO shows VALUES (\'{str(data["air_date"])}\',' + \
-                f'\'{str(data.get("url"))}\', \'{str(data.get("subtitle_url"))}\', \'{str(data.get("video_url"))}\', \'{str(data.get("topics"))}\')'
+                f'\'{str(data.get("url"))}\', \'{str(data.get("subtitle_url"))}\', \'{str(data.get("video_url"))}\', \'{json.dumps(str(data.get("topics")))}\')'
         )
         conn.commit()
         conn.close()
