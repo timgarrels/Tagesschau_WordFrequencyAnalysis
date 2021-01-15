@@ -12,7 +12,17 @@ pip3 install -r requirements.txt
 ```
 
 ## Usage
-`python3 scraper/main.py` scrapes the data from all available tagesschau shows from today 
+`python3 scraper/main.py` scrapes the data from all tagesschau shows that are currently missing from the db.
+
+## Setup
+### Scraper
+Clone the repository on a server and add a cronjob to run `python3 scraper/main.py`.
+Keep in mind that the show of today might not be uploaded yet, causing an error.
+Set the cronjob close to midnight, so that won't happen (hopefully).
+
+The scraper will then crawl all missing shows. The count of missing shows is dependent
+on your cron interval (if you run the scraper every day, there should be 1 show missing each run).
+
 
 ## Inspiration
 
