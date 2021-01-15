@@ -13,7 +13,7 @@ def init_db():
     conn = sqlite3.connect(config.DB_NAME)
     c = conn.cursor()
     c.execute(
-        "CREATE TABLE shows(air_date text, url text, subtitle_url text, video_url text, topics text)"
+        """CREATE TABLE shows(air_date text, url text, subtitle_url text, video_url text, topics text)"""
     )
     conn.commit()
     conn.close()
@@ -25,8 +25,8 @@ def add_data_to_db(data):
         conn = sqlite3.connect(config.DB_NAME)
         c = conn.cursor()
         c.execute(
-            f'INSERT INTO shows VALUES (\'{str(data["air_date"])}\',' + \
-                f'\'{str(data.get("url"))}\', \'{str(data.get("subtitle_url"))}\', \'{str(data.get("video_url"))}\', \'{json.dumps(str(data.get("topics")))}\')'
+            f"""INSERT INTO shows VALUES (\"{str(data["air_date"])}\",""" + \
+                f"""\"{str(data.get("url"))}\", \"{str(data.get("subtitle_url"))}\", \"{str(data.get("video_url"))}\", \"{json.dumps(str(data.get("topics")))}\")"""
         )
         conn.commit()
         conn.close()
