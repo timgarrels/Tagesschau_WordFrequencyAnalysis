@@ -81,7 +81,7 @@ def scrape_missing():
 def log(date_to_success_error_map):
     conn = sqlite3.connect(config.DB_NAME)
     c = conn.cursor()
-    for d, item in date_to_success_error_map:
+    for d, item in date_to_success_error_map.items():
         c.execute(f"""INSERT INTO logs VALUES(\"{str(date.today())}\", \"{str(d)}\", {bool(item["success"])}, \"{str(item["error"])}\")""")
     conn.commit()
     conn.close()
