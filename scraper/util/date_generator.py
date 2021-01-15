@@ -1,7 +1,7 @@
-from datetime import timedelta
+from datetime import timedelta, date
 
 
-def date_generator(start_date, end_date):
+def date_generator(start_date: date, end_date: date) -> date:
   """Generator for dates in range. Inclusive!"""
   days_passed = (end_date - start_date).days
   current_date = start_date
