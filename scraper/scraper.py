@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, timedelta
 
 from config import ARCHIVE_URL
 from TSUrl import TSUrl
@@ -34,3 +34,14 @@ def scrapeTSShows(
                 data[extractor_name] = None
     return data
 
+
+def test():
+    yesterday = date.today() - timedelta(days=1)
+    x = scrapeTSShows(yesterday, extractors={
+        "video_url": extractor.tsShow_extractor.video_url_extractor,
+        "suptitle": extractor.tsShow_extractor.subtitle_url_extractor,
+    })
+    print(x)
+
+if __name__ == "__main__":
+    test()

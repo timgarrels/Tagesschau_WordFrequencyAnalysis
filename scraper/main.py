@@ -21,6 +21,7 @@ def init_db():
     conn.commit()
     conn.close()
 
+
 def add_data_to_db(data):
     if not exists(config.DB_NAME):
         init_db()
@@ -36,6 +37,7 @@ def add_data_to_db(data):
     except sqlite3.OperationalError as e:
         exit(f"Error in adding data to the db: {data}\nTrace: {e}")
 
+
 def scrape(d: date):
     data = scraper.scrapeTSShows(
         d,
@@ -45,6 +47,7 @@ def scrape(d: date):
             "topics": extractor.tsShow_extractor.topics_extractor,
         })
     return data
+
 
 def scrape_missing():
     conn = sqlite3.connect(config.DB_NAME)
@@ -71,12 +74,14 @@ def scrape_missing():
         except Exception as e:
             success = False
             error = str(e)
+            raise e
 
         logs[d] = {
             "success": success,
             "error":   error,
         }
     return logs
+
 
 def log(date_to_success_error_map):
     conn = sqlite3.connect(config.DB_NAME)
@@ -86,9 +91,11 @@ def log(date_to_success_error_map):
     conn.commit()
     conn.close()
 
+
 def main():
     logs = scrape_missing()
     log(logs)
+
 
 if __name__ == "__main__":
     main()
